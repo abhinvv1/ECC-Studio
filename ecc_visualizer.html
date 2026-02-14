@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECC Studio - Master</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --accent-p: #f59e0b;
+            --accent-q: #10b981;
+            --accent-r: #ef4444;
+            --header-height: 60px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Header --- */
+        header {
+            height: var(--header-height);
+            background: var(--surface);
+            padding: 0 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        h1 { margin: 0; font-size: 1.25rem; font-weight: 800; color: var(--text-main); }
+        .equation-badge {
+            font-family: 'JetBrains Mono', monospace;
+            background: #eff6ff;
+            color: #1d4ed8;
+            padding: 4px 12px;
+            border-radius: 99px;
+            border: 1px solid #dbeafe;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        /* --- Layout --- */
+        .main-layout {
+            display: flex;
+            height: calc(100vh - var(--header-height));
+            overflow: hidden;
+        }
+
+        /* --- Sidebar --- */
+        .sidebar {
+            width: 340px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem;
+            gap: 1.5rem;
+            flex-shrink: 0;
+            z-index: 5;
+        }
+
+        /* Flex magic for sidebar */
+        .sidebar-top {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .sidebar-fill {
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1; /* Takes all remaining space */
+            min-height: 0; /* Allows content scrolling */
+            gap: 0.5rem;
+        }
+
+        .panel-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Inputs */
+        .input-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.5rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .input-box {
+            display: flex;
+            align-items: center;
+            background: var(--bg);
+            padding: 0.5rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+        
+        .input-box label { font-family: 'Times New Roman', serif; font-style: italic; font-weight: bold; margin-right: 8px; color: var(--text-muted); }
+        .input-box input { border: none; background: transparent; width: 100%; outline: none; font-weight: 600; font-size: 1rem; text-align: center; }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: 0.2s;
+        }
+        button:hover { background: var(--primary-dark); }
+        button.secondary { background: white; color: var(--text-main); border: 1px solid var(--border); }
+        button.secondary:hover { background: #f1f5f9; }
+
+        /* Point Analysis Card */
+        .detail-card {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+        .detail-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; align-items: center; }
+        .detail-value { font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        
+        /* Log Console */
+        .log-container {
+            flex-grow: 1;
+            background: #1e293b;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .log-content {
+            flex-grow: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: #e2e8f0;
+            line-height: 1.5;
+        }
+        .log-entry { margin-bottom: 6px; border-bottom: 1px solid #334155; padding-bottom: 4px; }
+        .log-entry:last-child { border: none; }
+        .log-entry span { opacity: 0.7; }
+
+        /* --- Content Area --- */
+        .content-area {
+            flex-grow: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Graph Container - HUGE */
+        .graph-section {
+            display: flex;
+            flex-direction: column;
+            height: 70vh; /* 70% of screen height */
+            min-height: 500px;
+        }
+        
+        .graph-wrapper {
+            flex-grow: 1;
+            background: var(--surface);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            position: relative;
+        }
+        canvas { max-height: 100%; max-width: 100%; cursor: crosshair; }
+
+        /* Collapsible Table */
+        details.table-dropdown {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        summary {
+            padding: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            user-select: none;
+        }
+        summary:hover { background: #f1f5f9; }
+        
+        .table-scroll {
+            overflow-x: auto;
+            max-height: 400px;
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        table { border-collapse: separate; border-spacing: 0; width: 100%; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+        th, td { border: 1px solid var(--border); padding: 10px; text-align: center; min-width: 50px; }
+        th { background: #f1f5f9; font-weight: 700; position: sticky; top: 0; z-index: 2; }
+        td.diagonal { background-color: #dcfce7; color: #166534; font-weight: bold; }
+        td.infinity { color: #94a3b8; font-style: italic; }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Elliptic Curves over Finite Fields</h1>
+        <p>Here you can plot the points of an elliptic curve under modular arithmetic.</p>
+        <div class="equation-badge">y² ≡ x³ + ax + b (mod p)</div>
+    </header>
+
+    <div class="main-layout">
+        
+        <aside class="sidebar">
+            
+            <div class="sidebar-top">
+                <div>
+                    <div class="panel-title">Curve Parameters</div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <div class="input-box"><label>a</label><input type="number" id="inp_a" value="2"></div>
+                        </div>
+                        <div class="input-group">
+                            <div class="input-box"><label>b</label><input type="number" id="inp_b" value="2"></div>
+                        </div>
+                        <div class="input-group">
+                            <div class="input-box"><label>p</label><input type="number" id="inp_p" value="11"></div>
+                        </div>
+                    </div>
+                    <button onclick="updateParams()" style="margin-top: 1rem;">Render Graph</button>
+                    <div id="prime-warning" style="display:none; color:red; font-size:0.8rem; margin-top:0.5rem;">⚠️ p must be prime!</div>
+                </div>
+
+                <div>
+                    <div class="panel-title">Point Analysis</div>
+                    <div id="point-details" class="detail-card">
+                        <div style="text-align: center; color: var(--text-muted); padding: 1rem 0;">
+                            Select points to Calculate
+                        </div>
+                    </div>
+                    <button class="secondary" onclick="clearSelection()" style="margin-top: 0.5rem;">Reset Selection</button>
+                </div>
+            </div>
+
+            <div class="sidebar-fill">
+                <div class="panel-title">System Log</div>
+                <div class="log-container">
+                    <div class="log-content" id="log">
+                        <div class="log-entry">System Initialized.</div>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+
+        <main class="content-area">
+            
+            <div class="graph-section">
+                <div class="panel-title" style="font-size: 1rem;">Finite Field Scatter Plot</div>
+                <div class="graph-wrapper">
+                    <canvas id="eccCanvas"></canvas>
+                </div>
+            </div>
+
+            <details class="table-dropdown">
+                <summary>📂 Cayley Addition Table (Click to Expand)</summary>
+                <div class="table-scroll">
+                    <table id="addTable"></table>
+                </div>
+            </details>
+
+        </main>
+    </div>
+
+<script>
+    // --- CORE LOGIC ---
+    let A, B, P;
+    let validPoints = [];
+    let selection = [];
+    
+    const canvas = document.getElementById('eccCanvas');
+    const ctx = canvas.getContext('2d');
+    let scale = 40;
+    let margin = 50;
+
+    // --- Math Utils ---
+
+    function isPrime(num) {
+        for(let i = 2, s = Math.sqrt(num); i <= s; i++)
+            if(num % i === 0) return false; 
+        return num > 1;
+    }
+
+    function mod(n, m) {
+        return ((n % m) + m) % m;
+    }
+
+    function modInverse(n, m) {
+        let [old_r, r] = [n, m];
+        let [old_s, s] = [1, 0];
+        while (r !== 0) {
+            let quotient = Math.floor(old_r / r);
+            [old_r, r] = [r, old_r - quotient * r];
+            [old_s, s] = [s, old_s - quotient * s];
+        }
+        if (old_r > 1) return NaN; 
+        return mod(old_s, m);
+    }
+
+    function pointToString(pt) {
+        return pt.inf ? "∞" : `(${pt.x},${pt.y})`;
+    }
+
+    function pointsEqual(p1, p2) {
+        if (p1.inf && p2.inf) return true;
+        if (p1.inf || p2.inf) return false;
+        return p1.x === p2.x && p1.y === p2.y;
+    }
+
+    function addPoints(p1, p2) {
+        if (p1.inf) return p2;
+        if (p2.inf) return p1;
+        if (p1.x === p2.x && p1.y !== p2.y) return {inf: true};
+        if (p1.x === p2.x && p1.y === 0) return {inf: true};
+
+        let slope;
+        let num, den;
+
+        if (pointsEqual(p1, p2)) {
+            num = mod(3 * p1.x * p1.x + A, P);
+            den = mod(2 * p1.y, P);
+        } else {
+            num = mod(p2.y - p1.y, P);
+            den = mod(p2.x - p1.x, P);
+        }
+
+        let inv = modInverse(den, P);
+        if (isNaN(inv) || den === 0) return {inf: true}; 
+
+        slope = mod(num * inv, P);
+        let x3 = mod(slope * slope - p1.x - p2.x, P);
+        let y3 = mod(slope * (p1.x - x3) - p1.y, P);
+
+        return {x: x3, y: y3, inf: false};
+    }
+
+    // --- Visualization ---
+
+    function calculateCurve() {
+        validPoints = [];
+        for (let x = 0; x < P; x++) {
+            let rhs = mod(Math.pow(x, 3) + A * x + B, P);
+            for (let y = 0; y < P; y++) {
+                if (mod(y * y, P) === rhs) {
+                    validPoints.push({x, y, inf: false});
+                }
+            }
+        }
+        log(`Found ${validPoints.length} valid points.`);
+        renderTable();
+    }
+
+    function setupCanvas() {
+        let container = document.querySelector('.graph-wrapper');
+        let size = Math.min(container.offsetWidth - 20, container.offsetHeight - 20);
+        canvas.width = size;
+        canvas.height = size;
+        scale = (size - (margin * 2)) / P;
+        draw();
+    }
+
+    function drawGrid() {
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        for (let i = 0; i <= P; i++) {
+            let pos = margin + i * scale;
+            ctx.beginPath(); ctx.moveTo(pos, margin); ctx.lineTo(pos, margin + P * scale); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(margin, pos); ctx.lineTo(margin + P * scale, pos); ctx.stroke();
+
+            // Only draw labels if not too crowded
+            if (P < 25 || i % 5 === 0) {
+                ctx.fillText(i, pos, margin + P * scale + 20); 
+                ctx.fillText(i, margin - 20, pos); 
+            }
+        }
+    }
+
+    function drawPoints() {
+        validPoints.forEach(pt => {
+            let cx = margin + pt.x * scale;
+            let cy = margin + pt.y * scale;
+            ctx.beginPath();
+            ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+            ctx.fillStyle = '#1e293b';
+            ctx.fill();
+        });
+    }
+
+    function drawSelection() {
+        selection.forEach((pt, idx) => {
+            let cx = margin + pt.x * scale;
+            let cy = margin + pt.y * scale;
+            
+            // Halo
+            ctx.beginPath();
+            ctx.arc(cx, cy, 12, 0, Math.PI * 2);
+            ctx.fillStyle = idx === 0 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(16, 185, 129, 0.2)';
+            ctx.fill();
+
+            // Core
+            ctx.beginPath();
+            ctx.arc(cx, cy, 7, 0, Math.PI * 2);
+            ctx.fillStyle = idx === 0 ? '#f59e0b' : '#10b981';
+            ctx.fill();
+            
+            // Label
+            ctx.fillStyle = 'white'; ctx.font = 'bold 10px sans-serif';
+            ctx.fillText(idx === 0 ? 'P' : 'Q', cx, cy);
+        });
+    }
+
+    function drawLines(slope, startPt) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(37, 99, 235, 0.5)';
+        ctx.lineWidth = 2;
+        let density = 20;
+        
+        for (let i = 0; i <= P * density; i++) {
+            let x_real = i / density; 
+            let y_real = slope * (x_real - startPt.x) + startPt.y;
+            let cx = margin + x_real * scale;
+            let cy = margin + mod(y_real, P) * scale;
+
+            if (i > 0) {
+                 let prev_y = mod(slope * ((i-1)/density - startPt.x) + startPt.y, P);
+                 if (Math.abs(prev_y - mod(y_real, P)) > P/2) {
+                     ctx.stroke(); ctx.beginPath();
+                 }
+            }
+            ctx.lineTo(cx, cy);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function performAddition() {
+        if (selection.length === 0) return;
+        let p1 = selection[0];
+        let p2 = selection.length > 1 ? selection[1] : p1;
+        let res = addPoints(p1, p2);
+
+        // Draw math lines
+        let isInverse = pointsEqual(p1, {x:p2.x, y:mod(-p2.y, P)}) && !pointsEqual(p1, p2);
+        if (!p1.inf && !p2.inf && !res.inf && !isInverse) {
+             let den = pointsEqual(p1, p2) ? mod(2 * p1.y, P) : mod(p2.x - p1.x, P);
+             let num = pointsEqual(p1, p2) ? mod(3 * p1.x * p1.x + A, P) : mod(p2.y - p1.y, P);
+             let inv = modInverse(den, P);
+             if(!isNaN(inv)) drawLines(mod(num * inv, P), p1);
+        }
+
+        if (!res.inf) {
+            let rx = margin + res.x * scale;
+            let ry = margin + res.y * scale;
+            
+            // Result Indicator (Semi-transparent red so you can see the black dot underneath!)
+            ctx.beginPath(); ctx.arc(rx, ry, 12, 0, Math.PI * 2); 
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.7)'; // Transparent Red
+            ctx.fill();
+            
+            ctx.fillStyle = 'white'; ctx.font = 'bold 10px sans-serif'; 
+            ctx.fillText(selection.length > 1 ? 'P+Q' : '2P', rx, ry);
+        }
+
+        let op = selection.length > 1 ? `${pointToString(p1)} + ${pointToString(p2)}` : `2 * ${pointToString(p1)}`;
+        log(`Computed: ${op} = ${pointToString(res)}`);
+        
+        // Verification Log
+        if (!res.inf) {
+             let lhs = mod(res.y * res.y, P);
+             let rhs = mod(Math.pow(res.x,3) + A*res.x + B, P);
+             log(`<span>↳ Verify: ${res.y}²≡${lhs}, RHS≡${rhs}. ${lhs===rhs ? "Valid" : "Error"}</span>`);
+        }
+    }
+
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawGrid();
+        drawPoints();
+        drawSelection();
+        performAddition();
+    }
+
+    // --- UI Logic ---
+
+    function renderDetails(pt) {
+        let div = document.getElementById('point-details');
+        div.innerHTML = `
+            <div class="detail-row"><span style="color:#64748b">Point</span><span class="detail-value" style="color:var(--accent-p)">${pointToString(pt)}</span></div>
+            <div class="detail-row"><span style="color:#64748b">Inverse</span><span class="detail-value">(${pt.x}, ${mod(-pt.y, P)})</span></div>
+        `;
+    }
+
+    function renderTable() {
+        let table = document.getElementById('addTable');
+        table.innerHTML = "";
+        let points = [...validPoints, {inf: true}];
+        
+        let hRow = document.createElement('tr');
+        hRow.innerHTML = "<th>+</th>" + points.map(p => `<th>${pointToString(p)}</th>`).join('');
+        table.appendChild(hRow);
+
+        points.forEach(rowPt => {
+            let tr = document.createElement('tr');
+            tr.innerHTML = `<th>${pointToString(rowPt)}</th>`;
+            points.forEach(colPt => {
+                let sum = addPoints(rowPt, colPt);
+                let cls = sum.inf ? 'infinity' : (pointsEqual(rowPt, colPt) ? 'diagonal' : '');
+                tr.innerHTML += `<td class="${cls}">${pointToString(sum)}</td>`;
+            });
+            table.appendChild(tr);
+        });
+    }
+
+    function log(msg) {
+        let box = document.getElementById('log');
+        let div = document.createElement('div');
+        div.className = 'log-entry';
+        div.innerHTML = msg;
+        box.prepend(div); // Add to top
+    }
+
+    function updateParams() {
+        A = parseInt(document.getElementById('inp_a').value);
+        B = parseInt(document.getElementById('inp_b').value);
+        P = parseInt(document.getElementById('inp_p').value);
+        
+        let warn = document.getElementById('prime-warning');
+        warn.style.display = isPrime(P) ? 'none' : 'block';
+
+        log(`Parameters: a=${A}, b=${B}, p=${P}`);
+        clearSelection();
+        calculateCurve();
+        setupCanvas();
+    }
+
+    function clearSelection() {
+        selection = [];
+        document.getElementById('point-details').innerHTML = `<div style="text-align:center; padding:1rem; color:#64748b">Select points</div>`;
+        draw();
+    }
+
+    canvas.addEventListener('mousedown', (evt) => {
+        let rect = canvas.getBoundingClientRect();
+        let x = evt.clientX - rect.left, y = evt.clientY - rect.top;
+        let clicked = null, minDist = 20;
+
+        validPoints.forEach(pt => {
+            let cx = margin + pt.x * scale, cy = margin + pt.y * scale;
+            let dist = Math.hypot(x - cx, y - cy);
+            if (dist < minDist) { clicked = pt; minDist = dist; }
+        });
+
+        if (clicked) {
+            if (selection.length === 2) selection = [clicked];
+            else selection.push(clicked);
+            renderDetails(clicked);
+            draw();
+        }
+    });
+
+    window.addEventListener('resize', setupCanvas);
+    updateParams();
+
+</script>
+</body>
+</html>
